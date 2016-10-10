@@ -17,6 +17,14 @@ import threading
 import cgi 
 import email
 
+#AlexaGUI
+import Adafruit_SSD1306
+from PIL import Image
+
+#AlexaGUI
+RST = 24
+disp = Adafruit_SSD1306.SSD1306_128_64(rst=RST)
+
 
 #Settings
 button = 18 		# GPIO Pin with button connected
@@ -52,14 +60,36 @@ class bcolors:
 	BOLD = '\033[1m'
 	UNDERLINE = '\033[4m'
 
+#AlexaGUI
+def init_display():
+	try:
+		disp.begin()
+		disp.clear()
+		disp.display()
+		return True
+	except:
+		return False
+
 def internet_on():
 	print("Checking Internet Connection...")
 	try:
 		r =requests.get('https://api.amazon.com/auth/o2/token')
 		print("Connection {}OK{}".format(bcolors.OKGREEN, bcolors.ENDC))
+		
+		#AlexaGUI
+		image = Image.open('Alexa.png').convert('1')
+		disp.image(image)
+		disp.display()
+		
 		return True
 	except:
 		print("Connection {}Failed{}".format(bcolors.WARNING, bcolors.ENDC))
+		
+		#AlexaGUI
+		image = Image.open('ConnectionKO.png').convert('1')
+		disp.image(image)
+		disp.display()
+				
 		return False
 
 def gettoken():
@@ -81,6 +111,12 @@ def alexa_speech_recognizer():
 	# https://developer.amazon.com/public/solutions/alexa/alexa-voice-service/rest/speechrecognizer-requests
 	if debug: print("{}Sending Speech Request...{}".format(bcolors.OKBLUE, bcolors.ENDC))
 	GPIO.output(plb_light, GPIO.HIGH)
+	
+	#AlexaGUI
+	image = Image.open('Waiting.png').convert('1')
+	disp.image(image)
+	disp.display()
+	
 	url = 'https://access-alexa-na.amazon.com/v1/avs/speechrecognizer/recognize'
 	headers = {'Authorization' : 'Bearer %s' % gettoken()}
 	d = {
@@ -266,6 +302,12 @@ def play_audio(file, offset=0):
 	global nav_token, p, audioplaying
 	if debug: print("{}Play_Audio Request for:{} {}".format(bcolors.OKBLUE, bcolors.ENDC, file))
 	GPIO.output(plb_light, GPIO.HIGH)
+	
+	#AlexaGUI
+	image = Image.open('Talking.png').convert('1')
+	disp.image(image)
+	disp.display()
+	
 	i = vlc.Instance('--aout=alsa')
 	m = i.media_new(file)
 	p = i.media_player_new()
@@ -369,6 +411,12 @@ def start():
 		inp.setperiodsize(500)
 		audio = ""
 		while(GPIO.input(button)==0): # we keep recording while the button is pressed
+
+			#AlexaGUI
+			image = Image.open('Listening.png').convert('1')
+			disp.image(image)
+			disp.display()
+			
 			l, data = inp.read()
 			if l:
 				audio += data
@@ -387,6 +435,12 @@ def setup():
 	GPIO.setup(button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 	GPIO.setup(lights, GPIO.OUT)
 	GPIO.output(lights, GPIO.LOW)
+	
+	#AlexaGUI
+	image = Image.open('RaspberryPi.png').convert('1')
+	disp.image(image)
+	disp.display()
+	
 	while internet_on() == False:
 		print(".")
 	token = gettoken()
@@ -403,6 +457,11 @@ def setup():
 		time.sleep(.1)
 		GPIO.output(plb_light, GPIO.LOW)
 	play_audio(path+"hello.mp3")
+	
+	#AlexaGUI
+	image = Image.open('Alexa.png').convert('1')
+	disp.image(image)
+	disp.display()
 
 
 if __name__ == "__main__":
